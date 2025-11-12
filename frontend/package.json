@@ -11,6 +11,9 @@
     "postinstall": "astro sync"
   },
   "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=20.11.0"
+  },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
     "@astrojs/react": "^3.6.2",
