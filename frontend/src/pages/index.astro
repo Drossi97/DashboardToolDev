@@ -1,8 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import AppWrapper from '../components/AppWrapper';
+import App from '../components/App';
 ---
 
 <Layout title="Dashboard">
-  <AppWrapper client:only="react" />
+  <App client:only="react" />
 </Layout>

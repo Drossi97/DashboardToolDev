@@ -1,22 +1,22 @@
 import React, { useState, useRef } from "react"
 import { useCSVInterval, type RawDataRow } from "../hooks/useCSVInterval"
 import { LoginModal } from "./LoginModal"
-import { ServerDataSelector } from "./ServerDataSelector"
-import { useAuth } from "../contexts/AuthContext"
+import { AuthProvider, useAuth } from "../contexts/AuthContext"
 import MapViewer, { MapViewerRef } from "./MapViewer"
 import JourneySelector from "./JourneySelector"
 import SpeedProfile from "./SpeedProfile"
 import ActivityDistribution from "./ActivityDistribution"
 import JourneyComparison from "./JourneyComparison"
 
-export default function App() {
+function AppContent() {
   const [selectedJourneys, setSelectedJourneys] = useState<Set<number>>(new Set())
   const [showStats, setShowStats] = useState(false)
   const [activeStatsView, setActiveStatsView] = useState<'speed' | 'activity' | 'comparison'>('speed')
+  const [currentShipName, setCurrentShipName] = useState<string>("")
   
   const csvProcessor = useCSVInterval()
   const mapViewerRef = useRef<MapViewerRef>(null)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, username } = useAuth()
 
   // Procesar datos descargados del servidor
   const handleDataDownloaded = async (rawData: RawDataRow[]) => {
@@ -93,6 +93,11 @@ export default function App() {
     setSelectedJourneys(newSelectedJourneys)
   }
 
+  // Manejar cambio de barco
+  const handleShipChange = (shipId: string, shipName: string) => {
+    setCurrentShipName(shipName)
+  }
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-white">
       {/* Mapa */}
@@ -102,19 +107,24 @@ export default function App() {
         selectedJourneys={selectedJourneys}
       />
 
+      {/* Indicador de barco - superior izquierda */}
+      {isAuthenticated && currentShipName && csvProcessor.results?.success && csvProcessor.results.data && (
+        <div className="absolute top-4 left-4 z-[9997] flex items-center gap-2">
+          <svg className="h-5 w-5 drop-shadow-lg" fill="#2563EB" viewBox="0 0 24 24">
+            <path d="M20 21c-1.39 0-2.78-.47-4-1.32-2.44 1.71-5.56 1.71-8 0C6.78 20.53 5.39 21 4 21H2v-2h2c1.38 0 2.74-.35 4-.99 2.52 1.29 5.48 1.29 8 0 1.26.65 2.62.99 4 .99h2v2h-2zM3.95 19H4c1.6 0 3.02-.88 4-2 .98 1.12 2.4 2 4 2s3.02-.88 4-2c.98 1.12 2.4 2 4 2h.05l1.89-6.68c.08-.26.06-.54-.06-.78s-.32-.42-.58-.5L20 10.62V6c0-1.1-.9-2-2-2h-3V1H9v3H6c-1.1 0-2 .9-2 2v4.62l-1.29.42c-.26.08-.46.26-.58.5s-.15.52-.06.78L3.95 19z"/>
+          </svg>
+          <p className="font-bold text-sm drop-shadow-lg" style={{ color: '#4D6882' }}>
+            {currentShipName}
+          </p>
+        </div>
+      )}
+
       {/* Modal de login - solo si no está autenticado */}
       {!isAuthenticated && (
         <LoginModal onLoginSuccess={handleLoginSuccess} />
       )}
 
-      {/* Selector de datos del servidor - aparece cuando está autenticado */}
-      {isAuthenticated && (
-        <ServerDataSelector
-          onDataDownloaded={handleDataDownloaded}
-        />
-      )}
-
-      {/* Selector de trayectos - solo mostrar cuando está autenticado */}
+      {/* Panel lateral unificado - solo mostrar cuando está autenticado */}
       {isAuthenticated && (
         <JourneySelector
           csvResults={csvProcessor.results}
@@ -125,6 +135,8 @@ export default function App() {
           onSelectAll={selectAllJourneys}
           onDeselectAll={deselectAllJourneys}
           onToggleMultipleJourneys={toggleMultipleJourneys}
+          onDataDownloaded={handleDataDownloaded}
+          onShipChange={handleShipChange}
         />
       )}
 
@@ -163,5 +175,13 @@ export default function App() {
       )}
 
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }

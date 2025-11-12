@@ -46,6 +46,7 @@ interface AuthContextType {
   error: string | null
   ships: Ship[]
   sessionId: string | null
+  username: string | null
   login: (credentials: LoginCredentials) => Promise<boolean>
   logout: () => void
   fetchData: (dateRange: DateRange) => Promise<FetchResult>
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
   const [ships, setShips] = useState<Ship[]>([])
 
   const fetchShips = async (): Promise<Ship[]> => {
@@ -101,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setSessionId(data.sessionId)
+      setUsername(credentials.username)
       setIsAuthenticated(true)
       console.log(`✔ Login exitoso (Session: ${data.sessionId})`)
       return true
@@ -110,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(errorMsg)
       setIsAuthenticated(false)
       setSessionId(null)
+      setUsername(null)
       console.error("✖ Error en login:", errorMsg)
       return false
     } finally {
@@ -191,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setIsAuthenticated(false)
     setSessionId(null)
+    setUsername(null)
     setError(null)
   }
 
@@ -201,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       error,
       ships,
       sessionId,
+      username,
       login,
       logout,
       fetchData,

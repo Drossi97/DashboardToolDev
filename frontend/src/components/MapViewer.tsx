@@ -924,19 +924,47 @@ const MapViewer = forwardRef<MapViewerRef, MapViewerProps>(({ csvResults, select
         }
 
         /* Eliminar líneas blancas entre tiles del mapa */
+        .leaflet-tile-container {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
         .leaflet-tile-container img {
           image-rendering: -webkit-optimize-contrast !important;
           image-rendering: crisp-edges !important;
+          max-width: none !important;
+          max-height: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          outline: none !important;
+          display: block !important;
         }
         
         .leaflet-tile {
           border: none !important;
           outline: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          display: block !important;
+          image-rendering: -webkit-optimize-contrast !important;
+          image-rendering: crisp-edges !important;
         }
         
         .leaflet-tile-pane {
           image-rendering: -webkit-optimize-contrast !important;
           image-rendering: crisp-edges !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        
+        /* Forzar que no haya espacios entre tiles */
+        .leaflet-layer,
+        .leaflet-tile-loaded {
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          outline: none !important;
         }
       `}</style>
     </div>

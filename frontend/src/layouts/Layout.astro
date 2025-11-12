@@ -95,4 +95,56 @@ const { title = "Dashboard", description = "Dashboard de análisis de rutas mar�
   body::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.5);
   }
+
+  /* Estilos para el menú desplegable del select */
+  select {
+    border-radius: 0.5rem !important;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    padding-right: 3rem;
+    min-width: 10rem;
+  }
+
+  /* Firefox */
+  select option {
+    border-radius: 0.5rem;
+  }
+
+  /* Webkit/Chrome - estilizar el menú popup del select */
+  select::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  select::-webkit-scrollbar-track {
+    background: rgba(31, 41, 55, 0.95);
+    border-radius: 0.5rem;
+  }
+
+  select::-webkit-scrollbar-thumb {
+    background: rgba(55, 65, 81, 0.95);
+    border-radius: 0.5rem;
+  }
+
+  /* Intenta aplicar border-radius al menú desplegable del select */
+  select > option {
+    border-radius: 0.5rem;
+  }
+
+  /* Ocultar icono del calendario en inputs datetime-local */
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="datetime-local"]::-webkit-inner-spin-button,
+  input[type="datetime-local"]::-webkit-clear-button {
+    display: none;
+    -webkit-appearance: none;
+  }
+
 </style>

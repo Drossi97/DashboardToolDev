@@ -1,6 +1,21 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { CSVIntervalResult, Journey } from "../hooks/useCSVInterval"
 import { getJourneyColor } from "../lib/colors"
+import { useAuth } from "../contexts/AuthContext"
+import { Download, Loader2 } from "lucide-react"
+
+interface RawDataRow {
+  timestamp: string
+  date: string
+  time: string
+  latitude: number | null
+  longitude: number | null
+  speed: number | null
+  navStatus: string
+  isGapMarker?: boolean
+  gapDuration?: string
+  [key: string]: any
+}
 
 interface JourneySelectorProps {
   csvResults: CSVIntervalResult | null
@@ -11,6 +26,8 @@ interface JourneySelectorProps {
   onSelectAll: () => void
   onDeselectAll: () => void
   onToggleMultipleJourneys?: (journeyIndices: number[]) => void
+  onDataDownloaded?: (data: RawDataRow[]) => void
+  onShipChange?: (shipId: string, shipName: string) => void
 }
 
 // Función helper para formatear fecha
@@ -39,13 +56,81 @@ export default function JourneySelector({
   onStatsViewChange,
   onSelectAll,
   onDeselectAll,
-  onToggleMultipleJourneys
+  onToggleMultipleJourneys,
+  onDataDownloaded,
+  onShipChange
 }: JourneySelectorProps) {
+
+  const { isLoading, ships, fetchData, fetchShips } = useAuth()
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [selectedShip, setSelectedShip] = useState("ceuta-jet")
+  const [isDataSectionExpanded, setIsDataSectionExpanded] = useState(false)
+
+  // Notificar cambio de barco
+  const handleShipChange = (shipId: string) => {
+    setSelectedShip(shipId)
+    const shipName = ships.find(s => s.id === shipId)?.name || getDefaultShipName(shipId)
+    if (onShipChange) {
+      onShipChange(shipId, shipName)
+    }
+  }
+
+  // Obtener nombre por defecto del barco
+  const getDefaultShipName = (shipId: string) => {
+    const defaultShips: Record<string, string> = {
+      'ceuta-jet': 'Ceuta Jet',
+      'tanger-express': 'Tanger Express',
+      'kattegat': 'Kattegat'
+    }
+    return defaultShips[shipId] || shipId
+  }
 
   const availableJourneys = csvResults?.success && csvResults.data?.journeys ? csvResults.data.journeys : []
   
   // Estado para controlar qué días están expandidos
   const [expandedDays, setExpandedDays] = React.useState<Set<string>>(new Set())
+
+  // Cargar lista de barcos
+  useEffect(() => {
+    fetchShips()
+  }, [])
+
+  // Notificar el barco inicial cuando se cargan los barcos
+  useEffect(() => {
+    if (ships.length > 0 && onShipChange) {
+      const initialShip = ships.find(s => s.id === selectedShip)
+      if (initialShip) {
+        onShipChange(selectedShip, initialShip.name)
+      }
+    }
+  }, [ships])
+
+  // Manejar descarga de datos
+  const handleDownload = async () => {
+    try {
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+
+      const result = await fetchData({ start, end, shipId: selectedShip })
+
+      if (result.success && result.data && result.meta) {
+        // Notificar el nombre del barco actual
+        const shipName = ships.find(s => s.id === selectedShip)?.name || getDefaultShipName(selectedShip)
+        if (onShipChange) {
+          onShipChange(selectedShip, shipName)
+        }
+        
+        if (onDataDownloaded) {
+          onDataDownloaded(result.data)
+        }
+      } else {
+        alert(`✖ Error: ${result.error}`)
+      }
+    } catch (err) {
+      alert(`✖ Error: ${err instanceof Error ? err.message : "Error desconocido"}`)
+    }
+  }
   
   // Agrupar trayectos por día
   const journeysByDay = React.useMemo(() => {
@@ -134,13 +219,112 @@ export default function JourneySelector({
       }} />
       <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 w-80 h-[calc(100vh-2rem)] relative flex flex-col" style={{ zIndex: 999999, backgroundColor: '#1F2937' }}>
         <div className="px-4 pt-4 pb-3 flex-shrink-0">
-          {/* Título */}
-          <div className="mb-2 text-center">
-            <h4 className="text-white font-medium">Seleccionar Trayecto</h4>
+          {/* Línea separadora superior */}
+          <div className="border-b border-gray-600"></div>
+
+          {/* Header desplegable para Pedir Datos */}
+          <div 
+            className="flex items-center justify-center cursor-pointer hover:bg-gray-700/30 rounded transition-colors relative py-2"
+            onClick={() => setIsDataSectionExpanded(!isDataSectionExpanded)}
+          >
+            <h4 className="text-white font-medium">Pedir Datos</h4>
+            <svg 
+              className={`w-4 h-4 text-gray-400 transition-transform duration-200 absolute right-0 ${isDataSectionExpanded ? 'rotate-90' : ''}`}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </div>
-          
+
           {/* Línea separadora */}
-          <div className="border-b border-gray-600 mb-2"></div>
+          <div className="border-b border-gray-600 mb-3"></div>
+
+          {/* Controles de descarga - desplegables */}
+          {isDataSectionExpanded && (
+            <div className="space-y-3 mb-3">
+              {/* Botón descargar - arriba */}
+              <button
+                onClick={handleDownload}
+                disabled={isLoading || !startDate || !endDate}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Descargando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    Descargar Datos
+                  </>
+                )}
+              </button>
+
+              {/* Selector de barco */}
+              <div>
+                <label htmlFor="ship" className="block text-white text-xs font-semibold mb-1">
+                  Barco
+                </label>
+                <select
+                  id="ship"
+                  value={selectedShip}
+                  onChange={(e) => handleShipChange(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full h-10 rounded-lg bg-gray-700/50 border-0 px-4 text-white text-sm font-medium outline-none hover:bg-gray-600/50 focus:bg-gray-600/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {ships.length > 0 ? (
+                    ships.map((ship) => (
+                      <option key={ship.id} value={ship.id} className="bg-gray-800">
+                        {ship.name}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="ceuta-jet" className="bg-gray-800">Ceuta Jet</option>
+                      <option value="tanger-express" className="bg-gray-800">Tanger Express</option>
+                      <option value="kattegat" className="bg-gray-800">Kattegat</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              {/* Fecha inicio */}
+              <div>
+                <label htmlFor="startDate" className="block text-white text-xs font-semibold mb-1">
+                  Fecha Inicio
+                </label>
+                <input
+                  id="startDate"
+                  type="datetime-local"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full h-10 rounded-lg bg-gray-700/50 border-0 px-4 text-white text-sm text-center outline-none hover:bg-gray-600/50 focus:bg-gray-600/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+
+              {/* Fecha fin */}
+              <div>
+                <label htmlFor="endDate" className="block text-white text-xs font-semibold mb-1">
+                  Fecha Fin
+                </label>
+                <input
+                  id="endDate"
+                  type="datetime-local"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full h-10 rounded-lg bg-gray-700/50 border-0 px-4 text-white text-sm text-center outline-none hover:bg-gray-600/50 focus:bg-gray-600/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+
+              {/* Línea separadora después de controles */}
+              <div className="border-b border-gray-600 mt-3"></div>
+            </div>
+          )}
           
           {/* Botón de estadísticas */}
           <div className="mb-2">
@@ -354,7 +538,6 @@ export default function JourneySelector({
             ) : (
               <div className="text-center text-gray-300 py-8">
                 <p className="text-sm">No hay trayectos disponibles</p>
-                <p className="text-xs mt-1">Carga archivos CSV para ver los trayectos</p>
               </div>
             )}
           </div>
