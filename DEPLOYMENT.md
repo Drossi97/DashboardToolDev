@@ -48,11 +48,8 @@ Install Command: pnpm install
 ```
 
 **IMPORTANTE - Variables de entorno:**
-En el dashboard de Vercel, agregar:
-```
-# No necesitas variables para el frontend en este momento
-# Solo cuando tengas el backend desplegado
-```
+En el dashboard de Vercel, NO agregar nada todavía.
+Las configuraremos después de desplegar el backend.
 
 ### **Paso 5: Deploy**
 
@@ -113,25 +110,34 @@ https://tu-backend-production.up.railway.app
 
 ## 🔗 PARTE 3: Conectar Frontend con Backend
 
-### **Actualizar AuthContext.tsx**
+### **El código ya está preparado**
 
-Necesitas cambiar la URL del servidor:
-
+El frontend ya usa variables de entorno:
 ```typescript
-// En frontend/src/contexts/AuthContext.tsx
+// frontend/src/contexts/AuthContext.tsx
 const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL || "http://localhost:3000"
 ```
 
-### **Agregar variable de entorno en Vercel**
+### **Configurar variable de entorno en Vercel**
 
-En el dashboard de Vercel → Settings → Environment Variables:
-```
-PUBLIC_SERVER_URL = https://tu-backend-production.up.railway.app
-```
+1. Ve al dashboard de tu proyecto en Vercel
+2. Settings → Environment Variables
+3. Agregar:
+   - **Key:** `PUBLIC_SERVER_URL`
+   - **Value:** `https://tu-backend.up.railway.app` (la URL que te dio Railway)
+   - **Environments:** Production, Preview, Development (seleccionar todos)
+4. Click "Save"
+
+⚠️ **Importante:** NO incluir barra final `/` en la URL
 
 ### **Redeploy frontend**
 
-Vercel automáticamente redeployará con la nueva variable.
+1. En Vercel → Deployments
+2. Click en los "..." del último deployment
+3. Click "Redeploy"
+4. Espera ~2 minutos
+
+O simplemente haz push a GitHub y se redeployará automáticamente.
 
 ---
 
