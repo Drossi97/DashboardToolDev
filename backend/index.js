@@ -3,6 +3,9 @@
  * Versión simplificada enfocada en pasar datos correctamente a useCSVConverter
  */
 
+// Cargar variables de entorno
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -13,10 +16,12 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
 
-// Configuración
-const BASE_URL = 'https://proasapba.guapetononcloud.deep-insight.es';
+// Configuración desde variables de entorno
+const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || 'https://proasapba.guapetononcloud.deep-insight.es';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:4321';
+const SESSION_MAX_AGE_MINUTES = parseInt(process.env.SESSION_MAX_AGE_MINUTES || '30', 10);
 const LOGIN_PATH = '/auth/login?next=%2Findex';
 
 // Configuración de barcos disponibles
@@ -50,7 +55,7 @@ const sessions = new Map();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:4321',
+  origin: FRONTEND_URL,
   credentials: true
 }));
 app.use(express.json());
@@ -646,16 +651,16 @@ app.get('/', (req, res) => {
 });
 
 // Limpiar sesiones antiguas
+const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_MINUTES * 60 * 1000;
 setInterval(() => {
   const now = new Date();
-  const maxAge = 30 * 60 * 1000;
   for (const [sessionId, session] of sessions.entries()) {
-    if (now - session.lastUsed > maxAge) {
+    if (now - session.lastUsed > SESSION_MAX_AGE_MS) {
       console.log(`→ Limpiando sesión expirada: ${session.username}`);
       sessions.delete(sessionId);
     }
   }
-}, 30 * 60 * 1000);
+}, SESSION_MAX_AGE_MS);
 
 // Iniciar servidor
 app.listen(PORT, () => {
@@ -664,8 +669,9 @@ app.listen(PORT, () => {
   console.log('='.repeat(60));
   console.log(`📡 Puerto:    ${PORT}`);
   console.log(`🌐 URL:       http://localhost:${PORT}`);
-  console.log(`🎯 Frontend:  http://localhost:4321`);
+  console.log(`🎯 Frontend:  ${FRONTEND_URL}`);
   console.log(`🔗 Target:    ${BASE_URL}`);
+  console.log(`⏱️  Sesión:    ${SESSION_MAX_AGE_MINUTES} minutos`);
   console.log('='.repeat(60));
   console.log('\n✅ Esperando peticiones...\n');
 });

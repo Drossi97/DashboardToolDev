@@ -7,16 +7,21 @@
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
-  "keywords": ["proxy", "express", "cors", "proasap"],
+  "keywords": [
+    "proxy",
+    "express",
+    "cors",
+    "proasap"
+  ],
   "author": "David Rossi",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5",
     "axios": "^1.7.2",
+    "axios-cookiejar-support": "^5.0.2",
     "cheerio": "^1.0.0-rc.12",
-    "tough-cookie": "^4.1.4",
-    "axios-cookiejar-support": "^5.0.2"
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.19.2",
+    "tough-cookie": "^4.1.4"
   }
 }
-
