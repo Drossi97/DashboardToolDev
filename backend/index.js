@@ -53,11 +53,31 @@ const DEFAULT_PARAMS = {
 // Store de sesiones
 const sessions = new Map();
 
-// Middleware
+// Middleware CORS mejorado para producción
 app.use(cors({
-  origin: FRONTEND_URL || '*',  // Fallback a wildcard si FRONTEND_URL no existe
-  credentials: true
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Permitir el frontend configurado
+    if (FRONTEND_URL && origin === FRONTEND_URL) {
+      return callback(null, true);
+    }
+    
+    // Permitir localhost en desarrollo
+    if (origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    // Log para debugging
+    console.log(`⚠️ CORS: Origin rechazado: ${origin} (esperado: ${FRONTEND_URL})`);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
