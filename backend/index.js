@@ -55,7 +55,7 @@ const sessions = new Map();
 
 // Middleware
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: FRONTEND_URL || '*',  // Fallback a wildcard si FRONTEND_URL no existe
   credentials: true
 }));
 app.use(express.json());
