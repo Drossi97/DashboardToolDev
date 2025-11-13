@@ -1,309 +1,173 @@
 # 🚀 Guía de Despliegue - Dashboard Tool
 
-Esta guía explica cómo desplegar el proyecto en producción usando servicios gratuitos.
+Esta guía explica cómo desplegar el proyecto con Docker en Dokploy.
 
 ---
 
-## 💰 Costos y Recomendaciones
+## 🐳 Despliegue Unificado con Docker
 
-### **Opción Recomendada (100% GRATUITA)**
-- **Frontend**: Vercel (Plan Hobby - GRATIS)
-- **Backend**: Railway (GRATIS hasta $5/mes de uso, generalmente no se alcanza en hobby)
+El proyecto se despliega como **un solo contenedor** que incluye frontend y backend.
 
-### **Alternativas gratuitas para Backend:**
-- Render.com (GRATIS con sleep en inactividad)
-- Fly.io (GRATIS básico)
-- Servidor propio/VPS
-
----
-
-## 📋 PARTE 1: Desplegar Frontend en Vercel
-
-### **Paso 1: Preparar el repositorio**
-
-Ya está en GitHub: `https://github.com/Drossi97/DashboardToolDev.git` ✅
-
-### **Paso 2: Crear cuenta en Vercel**
-
-1. Ir a https://vercel.com
-2. Sign up con tu cuenta de GitHub
-3. Autorizar acceso a tus repositorios
-
-### **Paso 3: Importar proyecto**
-
-1. Click en "Add New Project"
-2. Seleccionar el repositorio `DashboardToolDev`
-3. Vercel detectará automáticamente que es un proyecto con frontend
-
-### **Paso 4: Configurar build**
-
-**Framework Preset:** Astro (o Other si no lo detecta)
-
-**Build Settings:**
-```
-Root Directory: frontend
-Build Command: pnpm build
-Output Directory: dist
-Install Command: pnpm install
-```
-
-**IMPORTANTE - Variables de entorno:**
-En el dashboard de Vercel, NO agregar nada todavía.
-Las configuraremos después de desplegar el backend.
-
-### **Paso 5: Deploy**
-
-Click en "Deploy" y espera ~2 minutos.
-
-**Resultado:**
-- URL generada: `https://dashboard-tool-dev.vercel.app` (o similar)
-- Auto-deploy en cada push a `main`
+### **Ventajas:**
+- ✅ Sin problemas de CORS (mismo origen)
+- ✅ Una sola URL para todo
+- ✅ Configuración simplificada
+- ✅ Fácil de mantener
 
 ---
 
-## 📋 PARTE 2: Desplegar Backend en Railway
+## 📋 Requisitos Previos
 
-### **¿Por qué Railway?**
-- ✅ GRATIS hasta $5/mes de uso (generalmente suficiente para hobby)
-- ✅ Soporta sesiones persistentes (a diferencia de serverless)
-- ✅ Variables de entorno fáciles
-- ✅ Deploy desde GitHub automático
+- Cuenta en Dokploy (o cualquier plataforma que soporte Docker)
+- Repositorio en GitHub: `https://github.com/Drossi97/DashboardToolDev.git`
+- Node.js 20+ instalado localmente (para desarrollo)
 
-### **Paso 1: Crear cuenta en Railway**
+---
 
-1. Ir a https://railway.app
-2. Sign up con GitHub
-3. Verificar email
+## 🚀 Pasos para Desplegar en Dokploy
 
-### **Paso 2: Crear nuevo proyecto**
+### **Paso 1: Crear Aplicación**
 
-1. Click "New Project"
-2. Seleccionar "Deploy from GitHub repo"
-3. Seleccionar `DashboardToolDev`
+1. Entra a Dokploy
+2. Ve a **Projects** → Tu proyecto
+3. Click en **"Create Service"** → **"Application"**
+4. Dale un nombre (ej: `dashboard-unified`)
 
-### **Paso 3: Configurar Railway**
+---
 
-**Settings del proyecto:**
+### **Paso 2: Configurar Source**
+
 ```
-Root Directory: backend
-Start Command: node index.js
+Provider: GitHub
+Repository: DashboardToolDev
+Branch: main
+Root Directory: .
 ```
 
-**Variables de entorno (obligatorias):**
+---
+
+### **Paso 3: Configurar Build**
+
+```
+Build Type: Dockerfile
+Dockerfile Path: Dockerfile
+Docker Context Path: .
+Docker Build Stage: (dejar vacío o poner "production")
+```
+
+---
+
+### **Paso 4: Configurar Port**
+
+```
+Port: 3000
+```
+
+⚠️ **MUY IMPORTANTE:** Asegúrate que el puerto sea `3000`, no `4321`
+
+---
+
+### **Paso 5: Variables de Entorno**
+
+Solo necesitas estas 2:
+
 ```env
-PORT=3000
 BASE_URL=https://proasapba.guapetononcloud.deep-insight.es
-FRONTEND_URL=https://tu-app.vercel.app
 SESSION_MAX_AGE_MINUTES=30
 ```
 
-⚠️ **IMPORTANTE:** Reemplaza `https://tu-app.vercel.app` con la URL real que te dio Vercel.
-
-### **Paso 4: Deploy**
-
-Railway desplegará automáticamente y te dará una URL:
-```
-https://tu-backend-production.up.railway.app
-```
+**NO necesitas:**
+- ❌ `FRONTEND_URL` (sin CORS en modo unificado)
+- ❌ `PUBLIC_SERVER_URL` (rutas relativas)
+- ❌ `PORT` (se define en la configuración)
 
 ---
 
-## 🔗 PARTE 3: Conectar Frontend con Backend
+### **Paso 6: Deploy**
 
-### **El código ya está preparado**
-
-El frontend ya usa variables de entorno:
-```typescript
-// frontend/src/contexts/AuthContext.tsx
-const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL || "http://localhost:3000"
-```
-
-### **Configurar variable de entorno en Vercel**
-
-1. Ve al dashboard de tu proyecto en Vercel
-2. Settings → Environment Variables
-3. Agregar:
-   - **Key:** `PUBLIC_SERVER_URL`
-   - **Value:** `https://tu-backend.up.railway.app` (la URL que te dio Railway)
-   - **Environments:** Production, Preview, Development (seleccionar todos)
-4. Click "Save"
-
-⚠️ **Importante:** NO incluir barra final `/` en la URL
-
-### **Redeploy frontend**
-
-1. En Vercel → Deployments
-2. Click en los "..." del último deployment
-3. Click "Redeploy"
-4. Espera ~2 minutos
-
-O simplemente haz push a GitHub y se redeployará automáticamente.
+1. Click en **"Deploy"**
+2. Espera 5-7 minutos (build multi-stage)
+3. Monitorea en la pestaña **"Logs"**
 
 ---
 
-## ✅ Verificación del Despliegue
+## ✅ Verificación
 
-### **1. Backend funcionando:**
-Visita: `https://tu-backend.railway.app/api/health`
+### **Logs exitosos deberían mostrar:**
 
-Deberías ver:
-```json
-{
-  "status": "ok",
-  "activeSessions": 0,
-  "uptime": 123.45
-}
+```
+📦 Modo unificado: CORS desactivado (mismo origen)
+📂 Sirviendo frontend desde: /app/public
+============================================================
+🚀 SERVIDOR EXPRESS PROXY INICIADO
+============================================================
+📡 Puerto:    3000
+🌐 URL:       http://0.0.0.0:3000
+🔗 Target:    https://proasapba.guapetononcloud.deep-insight.es
+⏱️  Sesión:    30 minutos
+============================================================
+✅ Esperando peticiones...
 ```
 
-### **2. Frontend funcionando:**
-Visita: `https://tu-app.vercel.app`
+### **URL de la aplicación:**
 
-Deberías ver el login.
+Dokploy te dará una URL como:
+```
+https://dashboard-unified-xxxxx.traefik.me
+```
 
-### **3. Conexión frontend-backend:**
-- Intenta hacer login
-- Si funciona → ✅ Todo conectado
-- Si no funciona → Verifica variables de entorno
+**Todo funciona en esa URL:**
+- `/` → Frontend (login, mapa, dashboard)
+- `/api/login` → Backend API
+- `/api/ships` → Backend API
+- `/api/download` → Backend API
 
 ---
 
-## 🐛 Problemas Comunes
+## 🐛 Solución de Problemas
 
-### **Error de CORS**
-**Causa:** FRONTEND_URL mal configurada en Railway
+### **Bad Gateway (502)**
+- ✅ Verifica que el puerto sea `3000`
+- ✅ Revisa los logs para errores de inicio
 
-**Solución:**
-```env
-FRONTEND_URL=https://tu-dominio-exacto.vercel.app
-```
-(Sin barra final `/`)
-
-### **Backend no inicia**
-**Causa:** Variables de entorno faltantes
-
-**Solución:** Verifica que todas las variables estén en Railway.
+### **Error de Build**
+- ✅ Verifica que `pnpm-lock.yaml` esté en el repo
+- ✅ Verifica que Node.js sea 20+
 
 ### **Login falla**
-**Causa:** Conexión con ProAsap BA bloqueada
-
-**Solución:** Verifica que BASE_URL sea correcta y accesible desde Railway.
-
----
-
-## 💡 Consejos Pro
-
-### **Dominios personalizados (GRATIS)**
-- Vercel permite agregar dominios custom sin costo
-- Railway también permite dominios custom
-
-### **Monitoreo**
-- Vercel muestra analytics de visitas
-- Railway muestra logs en tiempo real
-- Ambos tienen dashboards de métricas
-
-### **CI/CD automático**
-- Push a `main` → Auto-deploy en ambos servicios
-- Sin configuración adicional necesaria
+- ✅ Verifica que `BASE_URL` sea correcta
+- ✅ Revisa logs del backend para errores de conexión
 
 ---
 
-## 📊 Límites del Plan Gratuito
+## 🔄 Desarrollo Local
 
-### **Vercel (Hobby - GRATIS)**
-```
-✅ Proyectos ilimitados
-✅ 100 GB bandwidth/mes
-✅ Builds ilimitados
-✅ Auto HTTPS
-✅ CDN global
+Para desarrollo local, puedes seguir usando:
+
+**Backend:**
+```bash
+cd backend
+pnpm install
+pnpm dev
 ```
 
-### **Railway (Starter - GRATIS)**
-```
-✅ $5 de crédito gratis/mes
-✅ ~500 horas de ejecución/mes
-✅ 100 GB bandwidth
-⚠️ Si excedes $5, pasan a plan pago ($5/mes base)
-```
-
-**Para un proyecto de hobby/desarrollo:**
-- Frontend: 100% gratis siempre
-- Backend: Gratis si no tiene mucho tráfico
-
----
-
-## 🔐 Seguridad en Producción
-
-### **Variables de entorno**
-- ✅ Nunca hacer commit de `.env`
-- ✅ Usar `.env.example` como plantilla
-- ✅ Configurar en dashboard de cada servicio
-
-### **CORS**
-Ya está configurado dinámicamente:
-```javascript
-origin: process.env.FRONTEND_URL
+**Frontend:**
+```bash
+cd frontend
+pnpm install
+pnpm dev
 ```
 
-### **HTTPS**
-- Vercel: Automático
-- Railway: Automático
+**Variables locales:**
+- Backend: Crear `.env` desde `.env.example`
+- Frontend: No necesita variables (usa localhost por defecto)
 
 ---
 
-## 📝 Checklist de Despliegue
+## 📚 Más Información
 
-### **Antes de desplegar:**
-- [ ] Código subido a GitHub
-- [ ] `.env.example` creado en backend
-- [ ] `.gitignore` actualizado
-- [ ] Variables de entorno documentadas
-
-### **Frontend (Vercel):**
-- [ ] Cuenta Vercel creada
-- [ ] Proyecto importado desde GitHub
-- [ ] Build settings configurados (root: `frontend`)
-- [ ] Deploy exitoso
-- [ ] URL anotada
-
-### **Backend (Railway):**
-- [ ] Cuenta Railway creada
-- [ ] Proyecto creado desde GitHub
-- [ ] Root directory configurado (`backend`)
-- [ ] Variables de entorno configuradas:
-  - [ ] PORT
-  - [ ] BASE_URL
-  - [ ] FRONTEND_URL (URL de Vercel)
-  - [ ] SESSION_MAX_AGE_MINUTES
-- [ ] Deploy exitoso
-- [ ] URL anotada
-
-### **Conexión:**
-- [ ] PUBLIC_SERVER_URL configurada en Vercel
-- [ ] Frontend redeployado
-- [ ] Login testeado
-- [ ] Descarga de datos testeada
-
----
-
-## 🎯 Resumen Rápido
-
-**¿Me costará dinero?**
-- Frontend: **NO** (100% gratis)
-- Backend: **Probablemente NO** si es hobby/desarrollo
-- Solo pagarías si tienes MUCHO tráfico (poco probable en desarrollo)
-
-**¿Cuánto tiempo toma?**
-- Setup inicial: ~15-20 minutos
-- Deploys posteriores: Automáticos al hacer push
-
-**¿Es complicado?**
-- **No**, ambos servicios tienen UI muy amigables
-- Deploy con 1 click desde GitHub
-
----
-
-## 🆘 ¿Necesitas ayuda paso a paso?
-
-Si quieres que te guíe en el proceso de despliegue ahora mismo, dime y te voy ayudando paso a paso con cada pantalla. 🚀
+- **Frontend README:** Documentación técnica del frontend
+- **Backend README:** Documentación técnica del backend
+- **DOKPLOY.md:** Instrucciones específicas de Dokploy
+- **Dockerfile:** Configuración de build multi-stage
 
