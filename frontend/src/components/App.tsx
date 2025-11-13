@@ -16,7 +16,7 @@ function AppContent() {
   
   const csvProcessor = useCSVInterval()
   const mapViewerRef = useRef<MapViewerRef>(null)
-  const { isAuthenticated, username } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   // Procesar datos descargados del servidor
   const handleDataDownloaded = async (rawData: RawDataRow[]) => {
