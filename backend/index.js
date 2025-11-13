@@ -17,6 +17,9 @@ const path = require('path');
 
 const app = express();
 
+// Detectar si estamos en modo unificado (Docker)
+const isUnifiedMode = fs.existsSync(path.join(__dirname, 'public', 'index.html'));
+
 // Configuración desde variables de entorno
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || 'https://proasapba.guapetononcloud.deep-insight.es';
@@ -53,30 +56,35 @@ const DEFAULT_PARAMS = {
 // Store de sesiones
 const sessions = new Map();
 
-// Middleware CORS mejorado para producción
-app.use(cors({
-  origin: function (origin, callback) {
-    // Permitir requests sin origin (como Postman, curl, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Permitir el frontend configurado
-    if (FRONTEND_URL && origin === FRONTEND_URL) {
-      return callback(null, true);
-    }
-    
-    // Permitir localhost en desarrollo
-    if (origin.includes('localhost')) {
-      return callback(null, true);
-    }
-    
-    // Log para debugging
-    console.log(`⚠️ CORS: Origin rechazado: ${origin} (esperado: ${FRONTEND_URL})`);
-    callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// Middleware CORS - solo si NO estamos en modo unificado
+if (!isUnifiedMode) {
+  console.log('📡 Modo separado: Activando CORS');
+  app.use(cors({
+    origin: function (origin, callback) {
+      // Permitir requests sin origin (como Postman, curl, etc.)
+      if (!origin) return callback(null, true);
+      
+      // Permitir el frontend configurado
+      if (FRONTEND_URL && origin === FRONTEND_URL) {
+        return callback(null, true);
+      }
+      
+      // Permitir localhost en desarrollo
+      if (origin.includes('localhost')) {
+        return callback(null, true);
+      }
+      
+      // Log para debugging
+      console.log(`⚠️ CORS: Origin rechazado: ${origin} (esperado: ${FRONTEND_URL})`);
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+} else {
+  console.log('📦 Modo unificado: CORS desactivado (mismo origen)');
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -658,17 +666,36 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-/**
- * GET /
- */
-app.get('/', (req, res) => {
-  res.json({
-    name: 'ProAsap BA Proxy Server',
-    version: '2.0.0',
-    status: 'running',
-    activeSessions: sessions.size
+// Servir archivos estáticos del frontend (solo en modo unificado)
+if (isUnifiedMode) {
+  const publicPath = path.join(__dirname, 'public');
+  console.log(`📂 Sirviendo frontend desde: ${publicPath}`);
+  app.use(express.static(publicPath));
+  
+  // SPA fallback - todas las rutas no-API retornan index.html
+  app.get('*', (req, res, next) => {
+    // Si es una ruta API, continuar al handler normal
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    // Si no, servir index.html para el SPA
+    res.sendFile(path.join(publicPath, 'index.html'));
   });
-});
+}
+
+/**
+ * GET / (solo en modo separado)
+ */
+if (!isUnifiedMode) {
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'ProAsap BA Proxy Server',
+      version: '2.0.0',
+      status: 'running',
+      activeSessions: sessions.size
+    });
+  });
+}
 
 // Limpiar sesiones antiguas
 const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_MINUTES * 60 * 1000;
@@ -683,12 +710,12 @@ setInterval(() => {
 }, SESSION_MAX_AGE_MS);
 
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log('\n' + '='.repeat(60));
   console.log('🚀 SERVIDOR EXPRESS PROXY INICIADO');
   console.log('='.repeat(60));
   console.log(`📡 Puerto:    ${PORT}`);
-  console.log(`🌐 URL:       http://localhost:${PORT}`);
+  console.log(`🌐 URL:       http://0.0.0.0:${PORT}`);
   console.log(`🎯 Frontend:  ${FRONTEND_URL}`);
   console.log(`🔗 Target:    ${BASE_URL}`);
   console.log(`⏱️  Sesión:    ${SESSION_MAX_AGE_MINUTES} minutos`);

@@ -55,8 +55,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// URL del servidor backend (local o producción)
-const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL || "http://localhost:3000"
+// URL del servidor backend
+// En modo unificado (Docker), usa rutas relativas (mismo origen)
+// En modo separado, usa la URL completa del backend
+const SERVER_URL = import.meta.env.PUBLIC_SERVER_URL || ""
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
