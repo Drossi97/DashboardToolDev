@@ -1,8 +1,8 @@
 # Usar Node.js 20 LTS
 FROM node:20-alpine AS base
 
-# Instalar pnpm
-RUN npm install -g pnpm@8.15.0
+# Instalar pnpm (versión compatible con lockfiles)
+RUN npm install -g pnpm@10.16.1
 
 # ============================================
 # STAGE 1: Build Frontend
